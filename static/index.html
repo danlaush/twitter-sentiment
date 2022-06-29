@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>How angry is Twitter today?</title>
+  <style type="text/css">
+    :root {
+      --hue: 300;
+      --background: hsl(var(--hue), 80%, 50%);
+    }
+    body {
+      background-color: var(--background);
+      transition: background-color 1s;
+      height: 100vh;
+      display: grid;
+      place-items: center;
+      font-size: 4rem;
+      color: white;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+  </style>
+</head>
+<body>
+  <script type="module">
+    import { h, Component, render } from 'https://cdn.skypack.dev/preact';
+    import { useState, useEffect } from 'https://cdn.skypack.dev/preact/hooks';
+    import htm from 'https://cdn.skypack.dev/htm';
+  
+    // Initialize htm with Preact
+    const html = htm.bind(h);
+  
+    function App (props) {
+      const [search, setSearch] = useState('')
+      const [searchDisplay, setSearchDisplay] = useState('Twitter')
+      const [sentimentScore, setSentimentScore] = useState(0)
+      const [loading, setLoading] = useState(false)
+
+      const changeHandler = (event) => {
+        setSearch(event.target.value)
+      }
+      const submitHandler = (event) => {
+        event.preventDefault()
+        setLoading(true)
+        getSentiment(search).then(res => {
+          setLoading(false)
+          setSearchDisplay(search)
+          setSentimentScore(res.score)
+        }).catch(e => {
+          setLoading(false)
+          console.log(e)
+        })
+      }
+
+      useEffect(() => {
+        document.documentElement.style.setProperty('--hue', 240 + sentimentScore * 120);
+      }, [sentimentScore])
+
+      return html`<div>
+        <h1>Twitter sentiment Analysis</h1>
+        <form id="hashtag" onSubmit=${submitHandler}>
+          <label for="search">Search</label>
+          <input type="text" id="search" value=${search} onChange=${changeHandler} />
+          <input type="submit" value="Search" />
+          ${loading ? 'Loading...' : ''}
+        </form>
+        <p>How angry is ${searchDisplay} today? ${sentimentScore}</p>
+      </div>`;
+    }
+
+    async function getSentiment(search) {
+      const fetchUrl = `/api/analyzeSentiment?search=${encodeURIComponent(search)}`
+      try {
+        return await fetch(fetchUrl).then(checkOk).then(r => r.json())
+      } catch (error) {
+        console.log('Error fetching', error)
+      }
+    }
+
+    function checkOk(res) {
+      if(!res.ok) {
+        throw new Error('There was an error getting sentiment analysis', res.statusCode, res.statusText)
+      }
+      return res
+    }
+  
+    render(html`<${App} />`, document.body);
+  </script>
+</body>
+</html>
