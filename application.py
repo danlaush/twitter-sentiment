@@ -23,7 +23,7 @@ def root():
 
 
 @app.route('/api/analyzeSentiment', methods=['GET'])
-@cache.cached()
+@cache.cached(query_string=True)
 def apiAnalyzeSentiment():
     search = request.args.get('search')
     tweets = get_tweets_for_search(search)
@@ -32,7 +32,8 @@ def apiAnalyzeSentiment():
     print('search', search, 'score', score)
     return jsonify({'search': search, 'score': score, 'tweets': tweets_analyzed })
 
-# app.run()
+if __name__ == "__main__":
+  app.run()
 
 
 '''
