@@ -10,7 +10,7 @@ load_dotenv()
 app = Flask(__name__)
 
 app.config.from_mapping({
-    "DEBUG": True,  # run app in debug mode
+    "DEBUG": False,  # run app in debug mode
     "CACHE_TYPE": "SimpleCache",  # Flask-Caching related configs
     "CACHE_DEFAULT_TIMEOUT": 300
 })
@@ -32,7 +32,7 @@ def apiAnalyzeSentiment():
     print('search', search, 'score', score)
     return jsonify({'search': search, 'score': score, 'tweets': tweets_analyzed })
 
-app.run()
+# app.run()
 
 
 '''
