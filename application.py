@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # encoding: utf-8
 from dotenv import load_dotenv
-import json
 from twitter_client import get_tweets_for_search
 from flask import Flask, jsonify, request
 from flask_caching import Cache
