@@ -7,7 +7,7 @@ const searchEndpoint = "https://api.twitter.com/1.1/search/tweets.json?q=%23supe
  * Twitter API client
  */
 const twitter = {
-    fetch: async function(search: String, env: Env):Promise<{text:String}> {
+    fetch: async function(search, env) {
         const bearerToken = env.TWITTER_BEARER_TOKEN
         
         try {
@@ -30,10 +30,6 @@ const twitter = {
             text: 'found ' + search
         }
     }
-}
-
-export interface Env {
-	TWITTER_BEARER_TOKEN: String;
 }
 
 export default twitter

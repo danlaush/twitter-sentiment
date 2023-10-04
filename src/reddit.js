@@ -1,38 +1,13 @@
 
 import { Buffer } from 'node:buffer';
-const atob = (ascii: String) => Buffer.from(ascii).toString('base64');
+const atob = (ascii) => Buffer.from(ascii).toString('base64');
 const USER_AGENT = 'DanlaushApiTest'
-
-type RedditTopApiResponse = {
-	data: {
-		children: Array<RedditApiPost>
-	}
-}
-
-type RedditApiPost = {
-	data: RedditPost;
-}
-
-type RedditData = Array<RedditPost>;
-
-type RedditPost = {
-	id: number;
-	title: string;
-	selftext?: string;
-	permalink: string;
-	url: string;
-}
-
-type RedditComment = {
-	id: number;
-	text: string;
-}
 
 /**
  * Gets the top 10 posts from the data and the top 10 comments on each post
  * @param env 
  */
-export default async function getRedditData(env:any):Promise<RedditData> {
+export default async function getRedditData(env) {
 
 	console.log('[debug] getRedditData()')
 	const bearerToken = await getBearerToken(env.REDDIT_CLIENT_ID, env.REDDIT_CLIENT_SECRET)
@@ -49,12 +24,12 @@ export default async function getRedditData(env:any):Promise<RedditData> {
 	
 }
 
-async function getCommentsForPost(postId:number, bearerToken:string):Promise<Array<RedditComment>> {
+async function getCommentsForPost(postId, bearerToken) {
 	
 	return []
 }
 
-async function getBearerToken(clientId:string, clientSecret:string):Promise<string> {
+async function getBearerToken(clientId, clientSecret) {
 	var myHeaders = new Headers();
 	// const basicAuth = atob(`${clientId}:${clientSecret}`);
 	// console.log('basic auth', {
@@ -86,12 +61,12 @@ async function getBearerToken(clientId:string, clientSecret:string):Promise<stri
 	}
 }
 
-async function redditOauthApiRequest(endpoint:string, bearerToken:string) {
+async function redditOauthApiRequest(endpoint, bearerToken) {
 	try {
 		const headers = new Headers()
 		headers.append('Authorization', `Bearer ${bearerToken}`)
 		headers.append('User-Agent', USER_AGENT)
-		const res:RedditApiResponse = await fetch(`https://oauth.reddit.com${endpoint}`, {
+		const res = await fetch(`https://oauth.reddit.com${endpoint}`, {
 			headers,
 		}).then(resOk).then(res => res.json())
 		// console.log('success?', JSON.stringify(res, null, 2))
@@ -101,7 +76,7 @@ async function redditOauthApiRequest(endpoint:string, bearerToken:string) {
 	}
 }
 
-function resOk(response: Response) {
+function resOk(response) {
 	if(!response.ok) {
 		throw new Error(`Response not ok: ${response.status}, ${response.statusText}`)
 	}
