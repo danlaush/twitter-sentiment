@@ -1,5 +1,5 @@
 name = "twitter-sentiment"
-main = "src/index.ts"
+main = "src/index.js"
 compatibility_date = "2023-09-22"
 node_compat = true
 

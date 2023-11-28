@@ -5,28 +5,69 @@ const USER_AGENT = 'DanlaushApiTest'
 
 /**
  * Gets the top 10 posts from the data and the top 10 comments on each post
- * @param env 
  */
-export default async function getRedditData(env) {
-
-	console.log('[debug] getRedditData()')
+export default async function getRedditData(env, subreddit = 'CasualUK') {
+	console.log('[debug] getRedditData()', subreddit)
 	const bearerToken = await getBearerToken(env.REDDIT_CLIENT_ID, env.REDDIT_CLIENT_SECRET)
 	
+	let topPosts = []
 	try {
-		const topPosts = await redditOauthApiRequest(`/r/CasualUK/top?t=day`, bearerToken);
-		
-		const postComments = await Promise.all(topPosts.data.children.map(async ({data: {id}}) => getCommentsForPost(id, bearerToken)))
+		topPosts = await getTopPosts(subreddit, bearerToken);
 
-		// console.log('success?', JSON.stringify(res, null, 2))
 	} catch (error) {
-		console.error('error fetching posts', error)
+		console.error('error fetching top posts', error)
 	}
-	
+
+	let comments = []
+	try {
+		comments = (await Promise.all(
+			topPosts.map(post => 
+				getCommentsForPost(subreddit, post.id, bearerToken)
+			)
+		)).flat()
+		console.log('got the comments')
+	} catch (error) {
+		console.error('Failed to get comments for', subreddit, error)
+	}
+
+	return [
+		// this is a monstrosity - flatten/inline the title and optional
+		// selftext from each post into the return array
+		...topPosts.map(p => ([p.title, ...(p.selftext ? [p.selftext] : [])])).flat(),
+		...comments,
+	]
 }
 
-async function getCommentsForPost(postId, bearerToken) {
-	
-	return []
+async function getTopPosts(subreddit, bearerToken) {
+	const res = await redditOauthApiRequest(`/r/${subreddit}/top?t=day&limit=10`, bearerToken);
+	return res.data.children.map(({data}) => ({
+		id: data.id,
+		title: data.title,
+		selftext: data?.selftext,
+	}))
+}
+
+async function getCommentsForPost(subreddit, postId, bearerToken) {
+	try {
+		
+		const params = new URLSearchParams({
+			sort: 'top',
+			limit: 10,
+			depth: 0,
+			context: 0,
+			threaded: false,
+			showmedia: false,
+			showmore: false,
+			showtitle: false,
+			showedits: false,
+		})
+		const res = await redditOauthApiRequest(`/r/${subreddit}/comments/${postId}?${params.toString()}`, bearerToken)
+		const comments = res[1].data.children.map(comment => comment.data.body)
+		return comments
+	} catch (error) {
+		console.error('Failed to fetch comments for post', postId, error)
+		return []
+	}
 }
 
 async function getBearerToken(clientId, clientSecret) {
@@ -62,6 +103,7 @@ async function getBearerToken(clientId, clientSecret) {
 }
 
 async function redditOauthApiRequest(endpoint, bearerToken) {
+	// console.log('[debug] redditOauthApiRequest()', endpoint)
 	try {
 		const headers = new Headers()
 		headers.append('Authorization', `Bearer ${bearerToken}`)
@@ -78,6 +120,7 @@ async function redditOauthApiRequest(endpoint, bearerToken) {
 
 function resOk(response) {
 	if(!response.ok) {
+		console.log('response', JSON.stringify(response, null, 2))
 		throw new Error(`Response not ok: ${response.status}, ${response.statusText}`)
 	}
 	return response

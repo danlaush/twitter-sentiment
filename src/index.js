@@ -8,38 +8,65 @@
  * Learn more at https://developers.cloudflare.com/workers/
  */
 
-import { Ai } from '@cloudflare/ai'
 import { Hono } from 'hono'
 import { serveStatic } from 'hono/cloudflare-workers'
 import getRedditData from './reddit'
+import analyzeContent from './sentiment'
+import { HTTPException } from 'hono/http-exception'
 
 const app = new Hono()
 
 // app.get('/', (c) => c.text('Hono!'))
 app.get('/', serveStatic({ path: './index.html' }));
-app.get('/api', async ({req: { raw: request }, env}) => {
-    if(!env) {
-        throw new Error('Missing env binding');
-    }
-    const ai = new Ai(env.AI);
+app.get('/index.css', serveStatic({ path: './index.css' }));
+app.get('/sentiment', async ({req, env}) => {
+	try {
+		// get subreddit to analyse
+		const search = req.query('search')
+		if(!search) {
+			return
+		}
+		// get data for subreddit
+		const redditData = await getRedditData(env, search)
 
-    const response = await ai.run('@cf/huggingface/distilbert-sst-2-int8', {
-        text: "get tae fuck ye absolute numpty"
-    });
+		const analyzedContent = await analyzeContent(env, redditData)
 
-    return new Response(JSON.stringify(response));
+		const countPositive = analyzedContent.filter(c => c.sentiment === 'NEGATIVE').length
+		const score = countPositive / analyzedContent.length
+
+		return new Response(JSON.stringify({
+			search,
+			score,
+			content: analyzedContent
+		}))
+	} catch (error) {
+		const errorResponse = new Response(`Failed to analyse sentiment: ${error}`, {
+			status: 500,
+			
+		  })
+		throw new HTTPException(500, { res: errorResponse })
+	}
 })
-app.get('/reddit', async (c, env) => {
-    // extract query
-	// const search = c.req.query('search')
-	// if(!search) {
-	// 	throw new Error('No search value provided')
-	// }
-    // request from twitter module
-    const res = await getRedditData(env)
-    // return result
-    return new Response(JSON.stringify({what: 'hello'}))
-})
+// app.get('/api', async ({req: { raw: request }, env}) => {
+// 	const ai = new Ai(env.AI);
+
+//     const response = await ai.run('@cf/huggingface/distilbert-sst-2-int8', {
+//         text: "Been anxiously waiting to hear from son all week at freshers week. Sends update on peanut butter situation"
+//     });
+
+//     return new Response(JSON.stringify(response));
+// })
+// app.get('/reddit', async (c, env) => {
+//     // extract query
+// 	const search = c.req.query('search')
+// 	if(!search) {
+// 		throw new Error('No search value provided')
+// 	}
+//     // request from twitter module
+//     const res = await getRedditData(env)
+//     // return result
+//     return new Response(JSON.stringify({what: 'hello'}))
+// })
 
 export default app;
 
