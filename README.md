@@ -19,5 +19,5 @@ pnpm start
 ## Deployment
 
 ```
-
+npx wrangler deploy
 ```
